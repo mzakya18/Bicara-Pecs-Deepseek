@@ -5,10 +5,14 @@ import AssessmentPage from './pages/AssessmentPage';
 import SettingsPage from './pages/SettingsPage';
 import ToolsPage from './pages/ToolsPage';
 import SchedulePage from './pages/SchedulePage';
+import SequencePage from './pages/SequencePage';
+import PecsGeneratorPage from './pages/PecsGeneratorPage';
 
 export default function App() {
-  // Tambahkan state untuk 'tools' dan 'schedule'
   const [currentTab, setCurrentTab] = useState<string>('board');
+
+  // Daftar halaman yang menyembunyikan navigasi bawah (karena mode fokus/print)
+  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator'];
 
   return (
     <div className="min-h-screen bg-slate-100 max-w-md mx-auto flex flex-col font-sans relative pb-16">
@@ -18,11 +22,12 @@ export default function App() {
         {currentTab === 'assessment' && <AssessmentPage />}
         {currentTab === 'tools' && <ToolsPage onNavigate={setCurrentTab} />}
         {currentTab === 'schedule' && <SchedulePage onBack={() => setCurrentTab('tools')} />}
+        {currentTab === 'sequence' && <SequencePage onBack={() => setCurrentTab('tools')} />}
+        {currentTab === 'pecs_generator' && <PecsGeneratorPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'settings' && <SettingsPage />}
       </main>
 
-      {/* Sembunyikan Navigasi Bawah Jika Sedang di Halaman Schedule */}
-      {currentTab !== 'schedule' && (
+      {!fullScreenTabs.includes(currentTab) && (
         <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-200 flex justify-around items-center h-16 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
           
           <button onClick={() => setCurrentTab('board')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${currentTab === 'board' ? 'text-blue-600' : 'text-slate-400'}`}>
@@ -30,7 +35,7 @@ export default function App() {
             <span className="text-[10px] font-bold">Papan</span>
           </button>
 
-          <button onClick={() => setCurrentTab('tools')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${currentTab === 'tools' || currentTab === 'schedule' ? 'text-blue-600' : 'text-slate-400'}`}>
+          <button onClick={() => setCurrentTab('tools')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${currentTab === 'tools' ? 'text-blue-600' : 'text-slate-400'}`}>
             <Layers size={22} />
             <span className="text-[10px] font-bold">Fitur</span>
           </button>
