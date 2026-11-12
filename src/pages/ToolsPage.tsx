@@ -1,9 +1,10 @@
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, FileImage, ListOrdered } from 'lucide-react';
 
 export default function ToolsPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const tools = [
     { id: 'schedule', title: 'Jadwal Kegiatan', desc: 'Buat urutan aktivitas harian anak.', icon: <CalendarDays size={28} />, color: 'bg-green-100 text-green-600' },
-    // Fitur lain akan menyusul di sini
+    { id: 'sequence', title: 'Belajar Urutan', desc: 'Buat langkah-langkah suatu aktivitas.', icon: <ListOrdered size={28} />, color: 'bg-purple-100 text-purple-600' },
+    { id: 'pecs_generator', title: 'PECS Generator', desc: 'Cetak kartu PECS ukuran 5x5 cm.', icon: <FileImage size={28} />, color: 'bg-orange-100 text-orange-600' },
   ];
 
   return (
