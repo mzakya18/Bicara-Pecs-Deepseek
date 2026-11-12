@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Plus, X, Save } from 'lucide-react';
+import { ArrowLeft, Plus, X, Save, Printer } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { PecsItem } from '../types';
@@ -36,21 +36,31 @@ export default function SchedulePage({ onBack }: { onBack: () => void }) {
     setSaved(true);
     setTimeout(() => {
       setSaved(false);
-      onBack(); // Kembali ke menu utama
+      onBack();
     }, 1500);
+  };
+
+  const handlePrint = () => {
+    if (selectedCards.length === 0) return alert('Tambahkan kegiatan sebelum mencetak!');
+    window.print(); // Memicu dialog cetak browser
   };
 
   return (
     <div className="pb-24">
-      <header className="bg-white p-3 shadow-sm flex items-center gap-3 sticky top-0 z-10">
+      {/* HEADER APLIKASI (Disembunyikan saat print) */}
+      <header className="no-print bg-white p-3 shadow-sm flex items-center gap-3 sticky top-0 z-10">
         <button onClick={onBack} className="p-2 bg-slate-100 rounded-full"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-bold text-slate-800 flex-1">Buat Jadwal</h1>
+        <button onClick={handlePrint} className="p-2 bg-slate-100 text-slate-600 rounded-full mr-1">
+          <Printer size={20} />
+        </button>
         <button onClick={handleSave} className={`p-2 rounded-full text-white ${saved ? 'bg-green-500' : 'bg-blue-500'}`}>
           <Save size={20} />
         </button>
       </header>
 
-      <div className="p-4">
+      {/* AREA EDITOR (Disembunyikan saat print) */}
+      <div className="no-print p-4">
         <input 
           type="text" 
           value={title} 
@@ -80,9 +90,23 @@ export default function SchedulePage({ onBack }: { onBack: () => void }) {
         </button>
       </div>
 
+      {/* ===== AREA KHUSUS CETAK (Hanya muncul di kertas) ===== */}
+      <div className="hidden print:block print-container">
+        <h1 className="print-title">{title}</h1>
+        <div className="print-grid">
+          {selectedCards.map((card, index) => (
+            <div key={index} className="print-card">
+              <div className="text-xs font-bold text-slate-500 mb-1">Langkah {index + 1}</div>
+              <div className="emoji">{card.emoji}</div>
+              <div className="word">{card.word}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Modal Pilih Kartu */}
       {isPickerOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex flex-col justify-end">
+        <div className="no-print fixed inset-0 bg-black/50 z-50 flex flex-col justify-end">
           <div className="bg-white w-full max-w-md mx-auto rounded-t-3xl h-[70vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center">
               <h2 className="text-lg font-bold">Pilih Kartu</h2>
