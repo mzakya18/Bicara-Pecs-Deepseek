@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Volume2, VolumeX, Trash2, Plus, X, Image as ImageIcon } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
@@ -42,28 +42,26 @@ export default function BoardPage() {
 
   const cards = useLiveQuery(() => db.cards.toArray()) || [];
 
-  const addToSentence = (card: PecsItem) => {
+  const addToSentence = async (card: PecsItem) => {
     setSentence([...sentence, card]);
     speakText(card.word);
+    
+    // Simpan ke Riwayat Database
+    await db.history.add({ word: card.word, timestamp: Date.now() });
   };
 
   const speakText = (text: string) => {
     if (isMuted || !('speechSynthesis' in window)) return;
-    
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
     utterance.rate = 0.9;
-    
-    // Deteksi suara Indonesia
     const voices = window.speechSynthesis.getVoices();
     const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
     if (idVoice) utterance.voice = idVoice;
-
     window.speechSynthesis.speak(utterance);
   };
 
-  // ... (fungsi handleFileUpload, handleAddCard, handleDeleteCard sama seperti sebelumnya)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -74,7 +72,14 @@ export default function BoardPage() {
 
   const handleAddCard = async () => {
     if (!newWord.trim()) return alert('Tuliskan nama kartu!');
-    await db.cards.add({ id: 'custom_' + Date.now(), word: newWord, category: newCategory, emoji: newEmoji, imageUrl: newImageUrl || undefined, isCustom: true });
+    await db.cards.add({ 
+      id: 'custom_' + Date.now(), 
+      word: newWord, 
+      category: newCategory, 
+      emoji: newEmoji, 
+      imageUrl: newImageUrl || undefined, 
+      isCustom: true 
+    });
     setNewWord(''); setNewEmoji('🌟'); setNewImageUrl(''); setIsModalOpen(false);
   };
 
@@ -83,7 +88,17 @@ export default function BoardPage() {
     if (confirm('Hapus kartu ini?')) await db.cards.delete(id);
   };
 
-  const categories = [{ key: 'subjek', label: '👤 Subjek' }, { key: 'kata-kerja', label: '🟢 Kata Kerja' }, { key: 'benda', label: '🍎 Objek' }];
+  // Kategori Lengkap
+  const categories = [
+    { key: 'subjek', label: '👤 Subjek' },
+    { key: 'kata-kerja', label: '🟢 Kata Kerja' },
+    { key: 'benda', label: '🍎 Objek' },
+    { key: 'tempat', label: '📍 Tempat' },
+    { key: 'sifat', label: '🎨 Sifat' },
+    { key: 'waktu', label: '⏱️ Waktu' },
+    { key: 'perasaan', label: '💬 Perasaan' },
+  ];
+
   const filteredCards = cards.filter(c => c.category === activeCategory);
 
   return (
@@ -116,24 +131,29 @@ export default function BoardPage() {
         <button onClick={() => setSentence([])} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl flex items-center justify-center shadow-sm"><Trash2 size={20} /></button>
       </div>
 
-      <div className="flex gap-2 px-3 mt-4 overflow-x-auto pb-2">
+      {/* Scroll bar untuk kategori yang banyak */}
+      <div className="flex gap-2 px-3 mt-4 overflow-x-auto pb-2 scrollbar-hide">
         {categories.map((cat) => (
           <button key={cat.key} onClick={() => setActiveCategory(cat.key)} className={`px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-colors ${activeCategory === cat.key ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200'}`}>{cat.label}</button>
         ))}
       </div>
 
       <div className="px-3 mt-2 grid grid-cols-3 gap-2">
-        {filteredCards.map((card) => (
-          <div key={card.id} className="relative">
-            <button onClick={() => addToSentence(card)} className="w-full bg-white aspect-square rounded-2xl shadow-sm border-2 border-slate-200 flex flex-col items-center justify-center active:scale-95 p-2">
-              <CardVisual card={card} />
-              <span className="font-bold text-slate-700 text-xs text-center px-1">{card.word}</span>
-            </button>
-            {card.isCustom && (
-              <button onClick={(e) => handleDeleteCard(e, card.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-10"><X size={14} /></button>
-            )}
-          </div>
-        ))}
+        {filteredCards.length === 0 ? (
+          <p className="col-span-3 text-center text-slate-400 mt-5 text-sm">Belum ada kartu di kategori ini.</p>
+        ) : (
+          filteredCards.map((card) => (
+            <div key={card.id} className="relative">
+              <button onClick={() => addToSentence(card)} className="w-full bg-white aspect-square rounded-2xl shadow-sm border-2 border-slate-200 flex flex-col items-center justify-center active:scale-95 p-2">
+                <CardVisual card={card} />
+                <span className="font-bold text-slate-700 text-xs text-center px-1">{card.word}</span>
+              </button>
+              {card.isCustom && (
+                <button onClick={(e) => handleDeleteCard(e, card.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-10"><X size={14} /></button>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {isModalOpen && (
@@ -173,6 +193,10 @@ export default function BoardPage() {
                   <option value="subjek">Subjek</option>
                   <option value="kata-kerja">Kata Kerja</option>
                   <option value="benda">Objek / Benda</option>
+                  <option value="tempat">Tempat</option>
+                  <option value="sifat">Sifat / Warna</option>
+                  <option value="waktu">Waktu</option>
+                  <option value="perasaan">Perasaan</option>
                 </select>
               </div>
               <button onClick={handleAddCard} className="w-full bg-blue-500 text-white font-bold py-3 rounded-xl mt-4">Simpan Kartu</button>
