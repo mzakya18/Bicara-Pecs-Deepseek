@@ -13,16 +13,30 @@ import PecsGeneratorPage from './pages/PecsGeneratorPage';
 import CauseEffectPage from './pages/CauseEffectPage';
 import WorksheetGeneratorPage from './pages/WorksheetGeneratorPage';
 import ArchivePage from './pages/ArchivePage';
-import HistoryPage from './pages/HistoryPage'; // Import baru
+import HistoryPage from './pages/HistoryPage';
+import EmergencyIdPage from './pages/EmergencyIdPage';
+import EmergencyViewPage from './pages/EmergencyViewPage';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('board');
-  // Tambahkan history ke fullscreen
-  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator', 'cause_effect', 'worksheet', 'list_schedule', 'list_sequence', 'history'];
+  const [emergencyPayload, setEmergencyPayload] = useState<string | null>(null);
+
+  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator', 'cause_effect', 'worksheet', 'list_schedule', 'list_sequence', 'history', 'emergency_id'];
 
   useEffect(() => {
+    // Cek apakah URL memiliki hash #emergency=...
+    const hash = window.location.hash;
+    if (hash.startsWith('#emergency=')) {
+      setEmergencyPayload(hash.replace('#emergency=', ''));
+    }
+
     db.cards.count().then(count => { if (count === 0) db.cards.bulkAdd(DEFAULT_CARDS); });
   }, []);
+
+  // Jika sedang membuka halaman darurat (hasil scan QR)
+  if (emergencyPayload) {
+    return <EmergencyViewPage payload={emergencyPayload} />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 max-w-md mx-auto flex flex-col font-sans relative pb-16">
@@ -37,12 +51,14 @@ export default function App() {
         {currentTab === 'pecs_generator' && <PecsGeneratorPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'cause_effect' && <CauseEffectPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'worksheet' && <WorksheetGeneratorPage onBack={() => setCurrentTab('tools')} />}
-        {currentTab === 'history' && <HistoryPage onBack={() => setCurrentTab('tools')} />} {/* Rute Baru */}
+        {currentTab === 'history' && <HistoryPage onBack={() => setCurrentTab('tools')} />}
+        {currentTab === 'emergency_id' && <EmergencyIdPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'settings' && <SettingsPage />}
       </main>
 
       {!fullScreenTabs.includes(currentTab) && (
         <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-200 flex justify-around items-center h-16 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
+          {/* ... (Kode navigasi bawah sama seperti sebelumnya) ... */}
           <button onClick={() => setCurrentTab('board')} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${currentTab === 'board' ? 'text-blue-600' : 'text-slate-400'}`}>
             <LayoutGrid size={22} /><span className="text-[10px] font-bold">Papan</span>
           </button>
