@@ -1,0 +1,118 @@
+import { useState } from 'react';
+import { ArrowLeft, Printer, CheckSquare, Square } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/database';
+import { PecsItem } from '../types';
+
+// Fungsi untuk mengacak urutan array
+const shuffleArray = (array: any[]) => {
+  const newArr = [...array];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+};
+
+export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void }) {
+  const [selectedCards, setSelectedCards] = useState<PecsItem[]>([]);
+  const [shuffledRight, setShuffledRight] = useState<PecsItem[]>([]);
+  
+  const allCards = useLiveQuery(() => db.cards.toArray()) || [];
+
+  const toggleCard = (card: PecsItem) => {
+    if (selectedCards.find(c => c.id === card.id)) {
+      setSelectedCards(selectedCards.filter(c => c.id !== card.id));
+    } else {
+      if (selectedCards.length >= 5) {
+        return alert('Maksimal 5 kartu agar pas di kertas A4.');
+      }
+      setSelectedCards([...selectedCards, card]);
+    }
+  };
+
+  const handlePrint = () => {
+    if (selectedCards.length < 2) return alert('Pilih minimal 2 kartu untuk dijodohkan!');
+    
+    // Acak posisi gambar dan kata agar tidak sejajar
+    const leftItems = shuffleArray(selectedCards);
+    const rightItems = shuffleArray(selectedCards);
+    
+    setShuffledRight(rightItems);
+    
+    // Beri jeda sedikit agar React selesai me-render sebelum print dialog muncul
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  };
+
+  return (
+    <div className="pb-24">
+      <header className="no-print bg-white p-3 shadow-sm flex items-center gap-3 sticky top-0 z-10">
+        <button onClick={onBack} className="p-2 bg-slate-100 rounded-full"><ArrowLeft size={20} /></button>
+        <h1 className="text-lg font-bold text-slate-800 flex-1">Worksheet Generator</h1>
+        <button onClick={handlePrint} className="p-2 bg-blue-100 text-blue-600 rounded-full">
+          <Printer size={20} />
+        </button>
+      </header>
+
+      <div className="no-print p-4">
+        <p className="text-sm text-slate-500 mb-4">Pilih 2-5 kartu. Aplikasi akan membuat lembar kerja mencocokkan gambar dengan kata.</p>
+        
+        <div className="flex justify-between items-center mb-3">
+          <span className="text-sm font-bold text-slate-600">{selectedCards.length} / 5 Dipilih</span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {allCards.map(card => {
+            const isSelected = selectedCards.some(c => c.id === card.id);
+            return (
+              <button
+                key={card.id}
+                onClick={() => toggleCard(card)}
+                className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-colors ${
+                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'
+                }`}
+              >
+                <span className="text-3xl">{card.emoji}</span>
+                <span className="text-[10px] font-bold text-slate-700 mt-1 text-center">{card.word}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* AREA CETAK WORKSHEET */}
+      <div className="hidden print:block print-worksheet-container">
+        <div className="print-worksheet-header">
+          <h1>Lembar Kerja: Menjodohkan</h1>
+          <p>Tarik garis dari gambar di sebelah kiri ke kata yang tepat di sebelah kanan!</p>
+        </div>
+
+        {selectedCards.length > 0 && (
+          <div className="print-worksheet-grid">
+            {/* Kolom Kiri (Gambar) */}
+            <div className="print-column">
+              {selectedCards.map((card, index) => (
+                <div key={index} className="print-item left">
+                  <span>{card.emoji}</span>
+                  <div className="print-dot" style={{ marginLeft: 'auto' }}></div>
+                </div>
+              ))}
+            </div>
+
+            {/* Kolom Kanan (Kata) */}
+            <div className="print-column">
+              {shuffledRight.map((card, index) => (
+                <div key={index} className="print-item right">
+                  <div className="print-dot" style={{ marginRight: 'auto' }}></div>
+                  <span>{card.word}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
