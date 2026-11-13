@@ -1,7 +1,8 @@
 import { PecsItem } from '../types';
 
 // Base URL untuk gambar Mulberry Symbols (Lisensi Komersial)
-const M = 'https://raw.githubusercontent.com/straight-street/mulberry-symbols/master/EN';
+// Ganti baris paling atas menjadi ini:
+const M = 'https://cdn.jsdelivr.net/gh/straight-street/mulberry-symbols@master/EN';
 
 export const DEFAULT_CARDS: PecsItem[] = [
   // SUBJEK
