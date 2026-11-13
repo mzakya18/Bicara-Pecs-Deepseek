@@ -73,3 +73,16 @@ export default function SettingsPage() {
     </div>
   );
 }
+// ... (Kode atas biarkan sama) ...
+      <div className="mt-8 text-center text-slate-400 text-xs flex flex-col items-center gap-1 pb-10">
+        <p>Bicara PECS V2 &copy; 2024</p>
+        <p>Dikembangkan untuk membantu komunikasi anak.</p>
+        <div className="mt-4 p-3 bg-slate-100 rounded-lg text-[10px] text-slate-500">
+          <p className="font-bold mb-1">Atribusi Aset:</p>
+          <p>Simbol default menggunakan Emoji Standar.</p>
+          <p>Integrasi simbol AAC menggunakan Mulberry Symbols (CC BY-SA 2.0).</p>
+        </div>
+      </div>
+    </div>
+  );
+}
