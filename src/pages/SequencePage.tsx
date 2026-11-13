@@ -3,6 +3,7 @@ import { ArrowLeft, Plus, X, Save, Printer } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { PecsItem } from '../types';
+import CardVisual from '../components/CardVisual';
 
 export default function SequencePage({ onBack }: { onBack: () => void }) {
   const [title, setTitle] = useState('Cuci Tangan');
@@ -27,17 +28,9 @@ export default function SequencePage({ onBack }: { onBack: () => void }) {
     if (!title.trim()) return alert('Beri nama urutan kegiatan!');
     if (selectedCards.length === 0) return alert('Tambahkan minimal 1 langkah!');
 
-    await db.sequences.add({
-      title,
-      items: selectedCards,
-      createdAt: Date.now()
-    });
-
+    await db.sequences.add({ title, items: selectedCards, createdAt: Date.now() });
     setSaved(true);
-    setTimeout(() => {
-      setSaved(false);
-      onBack();
-    }, 1500);
+    setTimeout(() => { setSaved(false); onBack(); }, 1500);
   };
 
   return (
@@ -45,40 +38,25 @@ export default function SequencePage({ onBack }: { onBack: () => void }) {
       <header className="no-print bg-white p-3 shadow-sm flex items-center gap-3 sticky top-0 z-10">
         <button onClick={onBack} className="p-2 bg-slate-100 rounded-full"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-bold text-slate-800 flex-1">Buat Urutan</h1>
-        <button onClick={() => window.print()} className="p-2 bg-slate-100 text-slate-600 rounded-full mr-1">
-          <Printer size={20} />
-        </button>
-        <button onClick={handleSave} className={`p-2 rounded-full text-white ${saved ? 'bg-green-500' : 'bg-blue-500'}`}>
-          <Save size={20} />
-        </button>
+        <button onClick={() => window.print()} className="p-2 bg-slate-100 text-slate-600 rounded-full mr-1"><Printer size={20} /></button>
+        <button onClick={handleSave} className={`p-2 rounded-full text-white ${saved ? 'bg-green-500' : 'bg-blue-500'}`}><Save size={20} /></button>
       </header>
 
       <div className="no-print p-4">
-        <input 
-          type="text" 
-          value={title} 
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full text-lg font-bold border-b-2 border-slate-300 pb-2 mb-4 focus:outline-none focus:border-blue-500 bg-transparent"
-          placeholder="Nama Urutan (ex: Cuci Tangan)"
-        />
+        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full text-lg font-bold border-b-2 border-slate-300 pb-2 mb-4 focus:outline-none focus:border-blue-500 bg-transparent" placeholder="Nama Urutan (ex: Cuci Tangan)" />
 
         <div className="space-y-3">
           {selectedCards.map((card, index) => (
             <div key={index} className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex items-center gap-4">
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
-                {index + 1}
-              </div>
-              <span className="text-3xl">{card.emoji}</span>
+              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm flex-shrink-0">{index + 1}</div>
+              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0"><CardVisual card={card} /></div>
               <span className="font-bold text-slate-700 flex-1">{card.word}</span>
               <button onClick={() => removeCard(index)} className="text-red-400 p-2"><X size={18} /></button>
             </div>
           ))}
         </div>
 
-        <button 
-          onClick={() => setIsPickerOpen(true)}
-          className="w-full mt-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border-2 border-dashed border-slate-300"
-        >
+        <button onClick={() => setIsPickerOpen(true)} className="w-full mt-4 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-4 rounded-xl flex items-center justify-center gap-2 border-2 border-dashed border-slate-300">
           <Plus size={20} /> Tambah Langkah
         </button>
       </div>
@@ -90,8 +68,8 @@ export default function SequencePage({ onBack }: { onBack: () => void }) {
           {selectedCards.map((card, index) => (
             <div key={index} className="print-card">
               <div className="text-xs font-bold text-slate-500 mb-1">Langkah {index + 1}</div>
-              <div className="emoji">{card.emoji}</div>
-              <div className="word">{card.word}</div>
+              <div className="emoji flex justify-center h-16 items-center"><CardVisual card={card} isPrint={true} /></div>
+              <div className="word mt-2">{card.word}</div>
             </div>
           ))}
         </div>
@@ -107,12 +85,8 @@ export default function SequencePage({ onBack }: { onBack: () => void }) {
             </div>
             <div className="p-4 overflow-y-auto grid grid-cols-3 gap-2">
               {allCards.map(card => (
-                <button 
-                  key={card.id}
-                  onClick={() => handleAddCard(card)}
-                  className="bg-slate-50 aspect-square rounded-xl border border-slate-200 flex flex-col items-center justify-center p-2"
-                >
-                  <span className="text-3xl">{card.emoji}</span>
+                <button key={card.id} onClick={() => handleAddCard(card)} className="bg-slate-50 aspect-square rounded-xl border border-slate-200 flex flex-col items-center justify-center p-2">
+                  <CardVisual card={card} />
                   <span className="text-[10px] font-bold text-slate-700 mt-1 text-center">{card.word}</span>
                 </button>
               ))}
