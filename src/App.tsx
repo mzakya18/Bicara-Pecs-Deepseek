@@ -12,17 +12,15 @@ import SequencePage from './pages/SequencePage';
 import PecsGeneratorPage from './pages/PecsGeneratorPage';
 import CauseEffectPage from './pages/CauseEffectPage';
 import WorksheetGeneratorPage from './pages/WorksheetGeneratorPage';
+import ArchivePage from './pages/ArchivePage'; // Import halaman baru
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('board');
-  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator', 'cause_effect', 'worksheet'];
+  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator', 'cause_effect', 'worksheet', 'list_schedule', 'list_sequence'];
 
-  // PERBAIKAN 1: Cek dan isi database jika kosong
   useEffect(() => {
     db.cards.count().then(count => {
-      if (count === 0) {
-        db.cards.bulkAdd(DEFAULT_CARDS);
-      }
+      if (count === 0) db.cards.bulkAdd(DEFAULT_CARDS);
     });
   }, []);
 
@@ -34,6 +32,8 @@ export default function App() {
         {currentTab === 'tools' && <ToolsPage onNavigate={setCurrentTab} />}
         {currentTab === 'schedule' && <SchedulePage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'sequence' && <SequencePage onBack={() => setCurrentTab('tools')} />}
+        {currentTab === 'list_schedule' && <ArchivePage type="schedule" onBack={() => setCurrentTab('tools')} />}
+        {currentTab === 'list_sequence' && <ArchivePage type="sequence" onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'pecs_generator' && <PecsGeneratorPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'cause_effect' && <CauseEffectPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'worksheet' && <WorksheetGeneratorPage onBack={() => setCurrentTab('tools')} />}
