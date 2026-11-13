@@ -12,16 +12,16 @@ import SequencePage from './pages/SequencePage';
 import PecsGeneratorPage from './pages/PecsGeneratorPage';
 import CauseEffectPage from './pages/CauseEffectPage';
 import WorksheetGeneratorPage from './pages/WorksheetGeneratorPage';
-import ArchivePage from './pages/ArchivePage'; // Import halaman baru
+import ArchivePage from './pages/ArchivePage';
+import HistoryPage from './pages/HistoryPage'; // Import baru
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('board');
-  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator', 'cause_effect', 'worksheet', 'list_schedule', 'list_sequence'];
+  // Tambahkan history ke fullscreen
+  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator', 'cause_effect', 'worksheet', 'list_schedule', 'list_sequence', 'history'];
 
   useEffect(() => {
-    db.cards.count().then(count => {
-      if (count === 0) db.cards.bulkAdd(DEFAULT_CARDS);
-    });
+    db.cards.count().then(count => { if (count === 0) db.cards.bulkAdd(DEFAULT_CARDS); });
   }, []);
 
   return (
@@ -37,6 +37,7 @@ export default function App() {
         {currentTab === 'pecs_generator' && <PecsGeneratorPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'cause_effect' && <CauseEffectPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'worksheet' && <WorksheetGeneratorPage onBack={() => setCurrentTab('tools')} />}
+        {currentTab === 'history' && <HistoryPage onBack={() => setCurrentTab('tools')} />} {/* Rute Baru */}
         {currentTab === 'settings' && <SettingsPage />}
       </main>
 
