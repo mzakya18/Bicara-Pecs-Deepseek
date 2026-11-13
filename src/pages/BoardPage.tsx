@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Volume2, Trash2, Plus, X } from 'lucide-react';
+import { Volume2, Trash2, Plus, X, Image as ImageIcon } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { PecsItem, PecsCategory } from '../types';
+import CardVisual from '../components/CardVisual';
 
 export default function BoardPage() {
   const [sentence, setSentence] = useState<PecsItem[]>([]);
@@ -12,6 +13,7 @@ export default function BoardPage() {
   const [newWord, setNewWord] = useState('');
   const [newEmoji, setNewEmoji] = useState('🌟');
   const [newCategory, setNewCategory] = useState<PecsCategory>('benda');
+  const [newImageUrl, setNewImageUrl] = useState<string>(''); // State untuk gambar
 
   const cards = useLiveQuery(() => db.cards.toArray()) || [];
 
@@ -44,17 +46,36 @@ export default function BoardPage() {
     speakText(text);
   };
 
+  // Fungsi untuk menangani upload foto dari HP
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      // Mengubah gambar menjadi Base64 agar bisa disimpan di database lokal
+      const base64String = event.target?.result as string;
+      setNewImageUrl(base64String);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddCard = async () => {
     if (!newWord.trim()) return alert('Tuliskan nama kartu!');
+    if (!newImageUrl && !newEmoji) return alert('Masukkan gambar atau emoji!');
+
     await db.cards.add({
       id: 'custom_' + Date.now(),
       word: newWord,
       category: newCategory,
       emoji: newEmoji,
+      imageUrl: newImageUrl || undefined, // Simpan gambar jika ada
       isCustom: true
     });
+
     setNewWord('');
     setNewEmoji('🌟');
+    setNewImageUrl('');
     setIsModalOpen(false);
   };
 
@@ -88,7 +109,7 @@ export default function BoardPage() {
         ) : (
           sentence.map((item, index) => (
             <button key={index} onClick={() => removeFromSentence(index)} className="bg-slate-100 p-2 rounded-lg flex flex-col items-center border border-slate-200 active:scale-95">
-              <span className="text-2xl">{item.emoji}</span>
+              <CardVisual card={item} />
               <span className="text-[10px] font-bold mt-1 text-slate-700">{item.word}</span>
             </button>
           ))
@@ -121,12 +142,12 @@ export default function BoardPage() {
       <div className="px-3 mt-2 grid grid-cols-3 gap-2">
         {filteredCards.map((card) => (
           <div key={card.id} className="relative">
-            <button onClick={() => addToSentence(card)} className="w-full bg-white aspect-square rounded-2xl shadow-sm border-2 border-slate-200 flex flex-col items-center justify-center active:scale-95">
-              <span className="text-4xl mb-1">{card.emoji}</span>
+            <button onClick={() => addToSentence(card)} className="w-full bg-white aspect-square rounded-2xl shadow-sm border-2 border-slate-200 flex flex-col items-center justify-center active:scale-95 p-2">
+              <CardVisual card={card} />
               <span className="font-bold text-slate-700 text-xs text-center px-1">{card.word}</span>
             </button>
             {card.isCustom && (
-              <button onClick={(e) => handleDeleteCard(e, card.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md">
+              <button onClick={(e) => handleDeleteCard(e, card.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-10">
                 <X size={14} />
               </button>
             )}
@@ -134,31 +155,55 @@ export default function BoardPage() {
         ))}
       </div>
 
+      {/* Modal Tambah Kartu */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-slate-800">Tambah Kartu</h2>
+              <h2 className="text-lg font-bold text-slate-800">Tambah Kartu Baru</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400"><X size={24} /></button>
             </div>
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Nama Kartu</label>
-                <input type="text" value={newWord} onChange={(e) => setNewWord(e.target.value)} className="w-full border-2 border-slate-200 rounded-lg p-2" />
+                <input type="text" value={newWord} onChange={(e) => setNewWord(e.target.value)} className="w-full border-2 border-slate-200 rounded-lg p-2 focus:border-blue-500" />
               </div>
+
+              {/* BAGIAN UPLOAD GAMBAR BARU */}
+              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <label className="block text-sm font-bold text-slate-700 mb-2">Gambar Kartu</label>
+                
+                {newImageUrl ? (
+                  <div className="relative w-20 h-20 mx-auto mb-2">
+                    <img src={newImageUrl} alt="Preview" className="w-full h-full object-contain" />
+                    <button onClick={() => setNewImageUrl('')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X size={12} /></button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-center text-slate-400 mb-2">Belum ada gambar terpilih</p>
+                )}
+
+                <label className="w-full flex items-center justify-center gap-2 bg-blue-100 text-blue-600 font-bold py-2 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors">
+                  <ImageIcon size={18} /> Pilih Foto dari HP
+                  <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+                </label>
+              </div>
+
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Emoji</label>
-                <input type="text" value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} className="w-full border-2 border-slate-200 rounded-lg p-2" />
+                <label className="block text-sm font-bold text-slate-700 mb-1">Emoji (Cadangan jika tidak ada gambar)</label>
+                <input type="text" value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} className="w-full border-2 border-slate-200 rounded-lg p-2 focus:border-blue-500" />
               </div>
+
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Kategori</label>
-                <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as PecsCategory)} className="w-full border-2 border-slate-200 rounded-lg p-2">
+                <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as PecsCategory)} className="w-full border-2 border-slate-200 rounded-lg p-2 focus:border-blue-500">
                   <option value="subjek">Subjek</option>
                   <option value="kata-kerja">Kata Kerja</option>
                   <option value="benda">Objek / Benda</option>
                 </select>
               </div>
-              <button onClick={handleAddCard} className="w-full bg-blue-500 text-white font-bold py-3 rounded-xl mt-4">Simpan</button>
+
+              <button onClick={handleAddCard} className="w-full bg-blue-500 text-white font-bold py-3 rounded-xl mt-4">Simpan Kartu</button>
             </div>
           </div>
         </div>
