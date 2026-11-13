@@ -5,6 +5,36 @@ import { db } from '../db/database';
 import { PecsItem, PecsCategory } from '../types';
 import CardVisual from '../components/CardVisual';
 
+// Fungsi Kompresi Gambar
+const compressImage = (file: File, maxSize = 400): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > height && width > maxSize) {
+          height *= maxSize / width;
+          width = maxSize;
+        } else if (height > maxSize) {
+          width *= maxSize / height;
+          height = maxSize;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Kualitas 70%
+      };
+      img.onerror = reject;
+    };
+    reader.onerror = reject;
+  });
+};
+
 export default function BoardPage() {
   const [sentence, setSentence] = useState<PecsItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('subjek');
@@ -13,21 +43,14 @@ export default function BoardPage() {
   const [newWord, setNewWord] = useState('');
   const [newEmoji, setNewEmoji] = useState('🌟');
   const [newCategory, setNewCategory] = useState<PecsCategory>('benda');
-  const [newImageUrl, setNewImageUrl] = useState<string>(''); // State untuk gambar
+  const [newImageUrl, setNewImageUrl] = useState<string>('');
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const cards = useLiveQuery(() => db.cards.toArray()) || [];
 
   const addToSentence = (card: PecsItem) => {
     setSentence([...sentence, card]);
     speakText(card.word);
-  };
-
-  const clearSentence = () => setSentence([]);
-
-  const removeFromSentence = (index: number) => {
-    const newSentence = [...sentence];
-    newSentence.splice(index, 1);
-    setSentence(newSentence);
   };
 
   const speakText = (text: string) => {
@@ -40,50 +63,38 @@ export default function BoardPage() {
     }
   };
 
-  const speakSentence = () => {
-    if (sentence.length === 0) return;
-    const text = sentence.map((s) => s.word).join(' ');
-    speakText(text);
-  };
-
-  // Fungsi untuk menangani upload foto dari HP
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      // Mengubah gambar menjadi Base64 agar bisa disimpan di database lokal
-      const base64String = event.target?.result as string;
-      setNewImageUrl(base64String);
-    };
-    reader.readAsDataURL(file);
+    setIsCompressing(true);
+    try {
+      const compressedBase64 = await compressImage(file);
+      setNewImageUrl(compressedBase64);
+    } catch (err) {
+      alert('Gagal memproses gambar.');
+    }
+    setIsCompressing(false);
   };
 
   const handleAddCard = async () => {
     if (!newWord.trim()) return alert('Tuliskan nama kartu!');
-    if (!newImageUrl && !newEmoji) return alert('Masukkan gambar atau emoji!');
 
     await db.cards.add({
       id: 'custom_' + Date.now(),
       word: newWord,
       category: newCategory,
       emoji: newEmoji,
-      imageUrl: newImageUrl || undefined, // Simpan gambar jika ada
+      imageUrl: newImageUrl || undefined,
       isCustom: true
     });
 
-    setNewWord('');
-    setNewEmoji('🌟');
-    setNewImageUrl('');
-    setIsModalOpen(false);
+    setNewWord(''); setNewEmoji('🌟'); setNewImageUrl(''); setIsModalOpen(false);
   };
 
+  // (Sisa fungsi dan JSX sama seperti sebelumnya...)
   const handleDeleteCard = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm('Hapus kartu ini?')) {
-      await db.cards.delete(id);
-    }
+    if (confirm('Hapus kartu ini?')) await db.cards.delete(id);
   };
 
   const categories = [
@@ -98,9 +109,7 @@ export default function BoardPage() {
     <div className="pb-24">
       <header className="bg-white p-3 shadow-sm flex justify-between items-center sticky top-0 z-10">
         <h1 className="text-lg font-bold text-slate-800">Papan Bicara</h1>
-        <button onClick={() => setIsModalOpen(true)} className="p-2 bg-blue-100 rounded-full text-blue-600">
-          <Plus size={20} />
-        </button>
+        <button onClick={() => setIsModalOpen(true)} className="p-2 bg-blue-100 rounded-full text-blue-600"><Plus size={20} /></button>
       </header>
 
       <div className="p-3 bg-white mx-3 mt-3 rounded-xl shadow-sm min-h-[90px] border-2 border-dashed border-slate-300 flex gap-2 flex-wrap items-center">
@@ -108,7 +117,7 @@ export default function BoardPage() {
           <p className="text-slate-400 text-sm w-full text-center">Ketuk gambar di bawah untuk menyusun kalimat...</p>
         ) : (
           sentence.map((item, index) => (
-            <button key={index} onClick={() => removeFromSentence(index)} className="bg-slate-100 p-2 rounded-lg flex flex-col items-center border border-slate-200 active:scale-95">
+            <button key={index} onClick={() => setSentence(sentence.filter((_, i) => i !== index))} className="bg-slate-100 p-2 rounded-lg flex flex-col items-center border border-slate-200 active:scale-95">
               <CardVisual card={item} />
               <span className="text-[10px] font-bold mt-1 text-slate-700">{item.word}</span>
             </button>
@@ -117,25 +126,13 @@ export default function BoardPage() {
       </div>
 
       <div className="flex gap-2 px-3 mt-3">
-        <button onClick={speakSentence} className="flex-[2] bg-blue-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm">
-          <Volume2 size={20} /> Bicara
-        </button>
-        <button onClick={clearSentence} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl flex items-center justify-center shadow-sm">
-          <Trash2 size={20} />
-        </button>
+        <button onClick={() => { const text = sentence.map(s => s.word).join(' '); if(text) speakText(text); }} className="flex-[2] bg-blue-500 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-sm"><Volume2 size={20} /> Bicara</button>
+        <button onClick={() => setSentence([])} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl flex items-center justify-center shadow-sm"><Trash2 size={20} /></button>
       </div>
 
       <div className="flex gap-2 px-3 mt-4 overflow-x-auto pb-2">
         {categories.map((cat) => (
-          <button
-            key={cat.key}
-            onClick={() => setActiveCategory(cat.key)}
-            className={`px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-colors ${
-              activeCategory === cat.key ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200'
-            }`}
-          >
-            {cat.label}
-          </button>
+          <button key={cat.key} onClick={() => setActiveCategory(cat.key)} className={`px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-colors ${activeCategory === cat.key ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200'}`}>{cat.label}</button>
         ))}
       </div>
 
@@ -147,15 +144,12 @@ export default function BoardPage() {
               <span className="font-bold text-slate-700 text-xs text-center px-1">{card.word}</span>
             </button>
             {card.isCustom && (
-              <button onClick={(e) => handleDeleteCard(e, card.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-10">
-                <X size={14} />
-              </button>
+              <button onClick={(e) => handleDeleteCard(e, card.id)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md z-10"><X size={14} /></button>
             )}
           </div>
         ))}
       </div>
 
-      {/* Modal Tambah Kartu */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-xl max-h-[90vh] overflow-y-auto">
@@ -163,37 +157,30 @@ export default function BoardPage() {
               <h2 className="text-lg font-bold text-slate-800">Tambah Kartu Baru</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400"><X size={24} /></button>
             </div>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Nama Kartu</label>
                 <input type="text" value={newWord} onChange={(e) => setNewWord(e.target.value)} className="w-full border-2 border-slate-200 rounded-lg p-2 focus:border-blue-500" />
               </div>
-
-              {/* BAGIAN UPLOAD GAMBAR BARU */}
               <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <label className="block text-sm font-bold text-slate-700 mb-2">Gambar Kartu</label>
-                
+                <label className="block text-sm font-bold text-slate-700 mb-2">Gambar Kartu (Otomatis Kompres)</label>
                 {newImageUrl ? (
                   <div className="relative w-20 h-20 mx-auto mb-2">
                     <img src={newImageUrl} alt="Preview" className="w-full h-full object-contain" />
                     <button onClick={() => setNewImageUrl('')} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"><X size={12} /></button>
                   </div>
                 ) : (
-                  <p className="text-xs text-center text-slate-400 mb-2">Belum ada gambar terpilih</p>
+                  <p className="text-xs text-center text-slate-400 mb-2">{isCompressing ? 'Memproses...' : 'Belum ada gambar'}</p>
                 )}
-
                 <label className="w-full flex items-center justify-center gap-2 bg-blue-100 text-blue-600 font-bold py-2 rounded-lg cursor-pointer hover:bg-blue-200 transition-colors">
-                  <ImageIcon size={18} /> Pilih Foto dari HP
+                  <ImageIcon size={18} /> Pilih Foto
                   <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
                 </label>
               </div>
-
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Emoji (Cadangan jika tidak ada gambar)</label>
+                <label className="block text-sm font-bold text-slate-700 mb-1">Emoji (Cadangan)</label>
                 <input type="text" value={newEmoji} onChange={(e) => setNewEmoji(e.target.value)} className="w-full border-2 border-slate-200 rounded-lg p-2 focus:border-blue-500" />
               </div>
-
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-1">Kategori</label>
                 <select value={newCategory} onChange={(e) => setNewCategory(e.target.value as PecsCategory)} className="w-full border-2 border-slate-200 rounded-lg p-2 focus:border-blue-500">
@@ -202,7 +189,6 @@ export default function BoardPage() {
                   <option value="benda">Objek / Benda</option>
                 </select>
               </div>
-
               <button onClick={handleAddCard} className="w-full bg-blue-500 text-white font-bold py-3 rounded-xl mt-4">Simpan Kartu</button>
             </div>
           </div>
