@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bicara-pecs-v2-cache-v1';
+const CACHE_NAME = 'bicara-pecs-v2-cache-v2'; // Versi dinaikkan agar cache lama terhapus
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -10,7 +10,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
+            return caches.delete(cacheName); // Hapus cache lama
           }
         })
       );
@@ -20,33 +20,20 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  if (req.method !== 'GET') return;
-
-  // Jangan cache request ke API atau data firebase (jika ada nanti)
-  const url = new URL(req.url);
-  if (url.origin !== self.location.origin && !url.href.includes('mulberry-symbols')) {
-    return; // Biarkan request eksternal lewat
-  }
-
+  // Gunakan strategi Network First (Ambil dari internet dulu, baru cache)
   event.respondWith(
-    caches.match(req).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse; // Gunakan cache jika ada
-      }
-      return fetch(req).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic' && networkResponse.type !== 'cors') {
-          return networkResponse;
-        }
-        const responseToCache = networkResponse.clone();
+    fetch(event.request)
+      .then((response) => {
+        // Jika berhasil ambil dari internet, simpan ke cache
+        const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(req, responseToCache);
+          cache.put(event.request, responseClone);
         });
-        return networkResponse;
-      }).catch(() => {
-        // Fallback jika offline dan tidak ada cache
-        return caches.match('/Bicara-Pecs-Deepseek/index.html');
-      });
-    })
+        return response;
+      })
+      .catch(() => {
+        // Jika offline/gagal, ambil dari cache
+        return caches.match(event.request);
+      })
   );
 });
