@@ -7,12 +7,14 @@ import ToolsPage from './pages/ToolsPage';
 import SchedulePage from './pages/SchedulePage';
 import SequencePage from './pages/SequencePage';
 import PecsGeneratorPage from './pages/PecsGeneratorPage';
+import CauseEffectPage from './pages/CauseEffectPage';
+import WorksheetGeneratorPage from './pages/WorksheetGeneratorPage';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('board');
 
-  // Daftar halaman yang menyembunyikan navigasi bawah (karena mode fokus/print)
-  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator'];
+  // Tambahkan 'worksheet' ke fullScreenTabs
+  const fullScreenTabs = ['schedule', 'sequence', 'pecs_generator', 'cause_effect', 'worksheet'];
 
   return (
     <div className="min-h-screen bg-slate-100 max-w-md mx-auto flex flex-col font-sans relative pb-16">
@@ -24,6 +26,8 @@ export default function App() {
         {currentTab === 'schedule' && <SchedulePage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'sequence' && <SequencePage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'pecs_generator' && <PecsGeneratorPage onBack={() => setCurrentTab('tools')} />}
+        {currentTab === 'cause_effect' && <CauseEffectPage onBack={() => setCurrentTab('tools')} />}
+        {currentTab === 'worksheet' && <WorksheetGeneratorPage onBack={() => setCurrentTab('tools')} />}
         {currentTab === 'settings' && <SettingsPage />}
       </main>
 
