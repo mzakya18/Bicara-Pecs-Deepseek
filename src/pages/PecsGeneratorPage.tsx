@@ -3,6 +3,7 @@ import { ArrowLeft, Printer, CheckSquare, Square } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { PecsItem } from '../types';
+import CardVisual from '../components/CardVisual';
 
 export default function PecsGeneratorPage({ onBack }: { onBack: () => void }) {
   const [selectedCards, setSelectedCards] = useState<PecsItem[]>([]);
@@ -55,7 +56,7 @@ export default function PecsGeneratorPage({ onBack }: { onBack: () => void }) {
                   isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'
                 }`}
               >
-                <span className="text-3xl">{card.emoji}</span>
+                <CardVisual card={card} />
                 <span className="text-[10px] font-bold text-slate-700 mt-1 text-center">{card.word}</span>
               </button>
             );
@@ -68,7 +69,9 @@ export default function PecsGeneratorPage({ onBack }: { onBack: () => void }) {
         <div className="print-pecs-grid">
           {selectedCards.map((card) => (
             <div key={card.id} className="print-pecs-card">
-              <div className="emoji">{card.emoji}</div>
+              <div className="emoji w-full h-full flex justify-center items-center">
+                <CardVisual card={card} isPrint={true} />
+              </div>
               <div className="word">{card.word}</div>
             </div>
           ))}
