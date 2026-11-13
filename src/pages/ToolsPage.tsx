@@ -1,4 +1,4 @@
-import { CalendarDays, FileImage, ListOrdered, Zap } from 'lucide-react';
+import { CalendarDays, FileImage, ListOrdered, Zap, FileEdit } from 'lucide-react';
 
 export default function ToolsPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const tools = [
@@ -6,6 +6,7 @@ export default function ToolsPage({ onNavigate }: { onNavigate: (tab: string) =>
     { id: 'sequence', title: 'Belajar Urutan', desc: 'Buat langkah-langkah suatu aktivitas.', icon: <ListOrdered size={28} />, color: 'bg-purple-100 text-purple-600' },
     { id: 'pecs_generator', title: 'PECS Generator', desc: 'Cetak kartu PECS ukuran 5x5 cm.', icon: <FileImage size={28} />, color: 'bg-orange-100 text-orange-600' },
     { id: 'cause_effect', title: 'Sebab & Akibat', desc: 'Latihan interaktif sentuh & respon.', icon: <Zap size={28} />, color: 'bg-red-100 text-red-600' },
+    { id: 'worksheet', title: 'Worksheet Generator', desc: 'Cetak lembar kerja menjodohkan.', icon: <FileEdit size={28} />, color: 'bg-teal-100 text-teal-600' },
   ];
 
   return (
