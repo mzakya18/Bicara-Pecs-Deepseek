@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ArrowLeft, Printer, CheckSquare, Square } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { PecsItem } from '../types';
+import CardVisual from '../components/CardVisual';
 
-// Fungsi untuk mengacak urutan array
 const shuffleArray = (array: any[]) => {
   const newArr = [...array];
   for (let i = newArr.length - 1; i > 0; i--) {
@@ -33,17 +33,9 @@ export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void 
 
   const handlePrint = () => {
     if (selectedCards.length < 2) return alert('Pilih minimal 2 kartu untuk dijodohkan!');
-    
-    // Acak posisi gambar dan kata agar tidak sejajar
-    const leftItems = shuffleArray(selectedCards);
     const rightItems = shuffleArray(selectedCards);
-    
     setShuffledRight(rightItems);
-    
-    // Beri jeda sedikit agar React selesai me-render sebelum print dialog muncul
-    setTimeout(() => {
-      window.print();
-    }, 300);
+    setTimeout(() => { window.print(); }, 300);
   };
 
   return (
@@ -58,7 +50,6 @@ export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void 
 
       <div className="no-print p-4">
         <p className="text-sm text-slate-500 mb-4">Pilih 2-5 kartu. Aplikasi akan membuat lembar kerja mencocokkan gambar dengan kata.</p>
-        
         <div className="flex justify-between items-center mb-3">
           <span className="text-sm font-bold text-slate-600">{selectedCards.length} / 5 Dipilih</span>
         </div>
@@ -74,7 +65,7 @@ export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void 
                   isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'
                 }`}
               >
-                <span className="text-3xl">{card.emoji}</span>
+                <CardVisual card={card} />
                 <span className="text-[10px] font-bold text-slate-700 mt-1 text-center">{card.word}</span>
               </button>
             );
@@ -91,17 +82,17 @@ export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void 
 
         {selectedCards.length > 0 && (
           <div className="print-worksheet-grid">
-            {/* Kolom Kiri (Gambar) */}
             <div className="print-column">
               {selectedCards.map((card, index) => (
                 <div key={index} className="print-item left">
-                  <span>{card.emoji}</span>
+                  <div className="w-16 h-16 flex items-center justify-center">
+                    <CardVisual card={card} isPrint={true} />
+                  </div>
                   <div className="print-dot" style={{ marginLeft: 'auto' }}></div>
                 </div>
               ))}
             </div>
 
-            {/* Kolom Kanan (Kata) */}
             <div className="print-column">
               {shuffledRight.map((card, index) => (
                 <div key={index} className="print-item right">
