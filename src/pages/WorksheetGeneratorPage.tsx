@@ -5,6 +5,7 @@ import { db } from '../db/database';
 import { PecsItem } from '../types';
 import CardVisual from '../components/CardVisual';
 
+// Fungsi acak yang lebih baik
 const shuffleArray = (array: any[]) => {
   const newArr = [...array];
   for (let i = newArr.length - 1; i > 0; i--) {
@@ -24,18 +25,26 @@ export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void 
     if (selectedCards.find(c => c.id === card.id)) {
       setSelectedCards(selectedCards.filter(c => c.id !== card.id));
     } else {
-      if (selectedCards.length >= 5) {
-        return alert('Maksimal 5 kartu agar pas di kertas A4.');
-      }
+      if (selectedCards.length >= 5) return alert('Maksimal 5 kartu agar pas di kertas A4.');
       setSelectedCards([...selectedCards, card]);
     }
   };
 
   const handlePrint = () => {
     if (selectedCards.length < 2) return alert('Pilih minimal 2 kartu untuk dijodohkan!');
-    const rightItems = shuffleArray(selectedCards);
+    
+    // Logika: Acak sampai posisinya benar-benar berbeda dari urutan asli (jika memungkinkan)
+    let rightItems = shuffleArray(selectedCards);
+    if (selectedCards.length > 2) {
+      let attempts = 0;
+      while (rightItems.every((item, i) => item.id === selectedCards[i].id) && attempts < 10) {
+        rightItems = shuffleArray(selectedCards);
+        attempts++;
+      }
+    }
+
     setShuffledRight(rightItems);
-    setTimeout(() => { window.print(); }, 300);
+    setTimeout(() => { window.print(); }, 500);
   };
 
   return (
@@ -43,9 +52,7 @@ export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void 
       <header className="no-print bg-white p-3 shadow-sm flex items-center gap-3 sticky top-0 z-10">
         <button onClick={onBack} className="p-2 bg-slate-100 rounded-full"><ArrowLeft size={20} /></button>
         <h1 className="text-lg font-bold text-slate-800 flex-1">Worksheet Generator</h1>
-        <button onClick={handlePrint} className="p-2 bg-blue-100 text-blue-600 rounded-full">
-          <Printer size={20} />
-        </button>
+        <button onClick={handlePrint} className="p-2 bg-blue-100 text-blue-600 rounded-full"><Printer size={20} /></button>
       </header>
 
       <div className="no-print p-4">
@@ -58,13 +65,7 @@ export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void 
           {allCards.map(card => {
             const isSelected = selectedCards.some(c => c.id === card.id);
             return (
-              <button
-                key={card.id}
-                onClick={() => toggleCard(card)}
-                className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-colors ${
-                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'
-                }`}
-              >
+              <button key={card.id} onClick={() => toggleCard(card)} className={`aspect-square rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-colors ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'}`}>
                 <CardVisual card={card} />
                 <span className="text-[10px] font-bold text-slate-700 mt-1 text-center">{card.word}</span>
               </button>
@@ -94,8 +95,14 @@ export default function WorksheetGeneratorPage({ onBack }: { onBack: () => void 
             </div>
 
             <div className="print-column">
-              {shuffledRight.map((card, index) => (
+              {shuffledRight.length > 0 ? shuffledRight.map((card, index) => (
                 <div key={index} className="print-item right">
+                  <div className="print-dot" style={{ marginRight: 'auto' }}></div>
+                  <span>{card.word}</span>
+                </div>
+              )) : selectedCards.map((card, index) => (
+                 // Fallback jika array shuffledRight belum siap
+                 <div key={index} className="print-item right">
                   <div className="print-dot" style={{ marginRight: 'auto' }}></div>
                   <span>{card.word}</span>
                 </div>
