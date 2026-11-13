@@ -1,6 +1,8 @@
 import { useRef } from 'react';
-import { Download, Upload, ShieldCheck, Info } from 'lucide-react';
+import { Download, Upload, ShieldCheck, Info, RefreshCw } from 'lucide-react';
 import { exportData, importData } from '../utils/backup';
+import { db } from '../db/database';
+import { DEFAULT_CARDS } from '../data/defaultCards';
 
 export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -9,7 +11,21 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (file) {
       importData(file);
-      e.target.value = ''; // Reset input
+      e.target.value = '';
+    }
+  };
+
+  const handleResetDefaults = async () => {
+    if (confirm('Muat ulang kartu bawaan? Kartu buatan Anda sendiri tidak akan terhapus, hanya kartu bawaan yang akan diperbarui.')) {
+      // Hapus hanya kartu yang bukan buatan user (isCustom === false atau undefined)
+      const allCards = await db.cards.toArray();
+      const customCards = allCards.filter(c => c.isCustom);
+      
+      await db.cards.clear();
+      await db.cards.bulkAdd([...DEFAULT_CARDS, ...customCards]);
+      
+      alert('Kartu bawaan berhasil diperbarui dengan gambar baru!');
+      window.location.reload();
     }
   };
 
@@ -38,13 +54,14 @@ export default function SettingsPage() {
             <Upload size={20} /> Pulihkan Data (Import)
           </button>
           
-          <input 
-            type="file" 
-            accept=".json" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            className="hidden" 
-          />
+          <input type="file" accept=".json" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+
+          <button 
+            onClick={handleResetDefaults}
+            className="w-full flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-4 rounded-xl transition-colors mt-4"
+          >
+            <RefreshCw size={20} /> Muat Ulang Kartu Bawaan
+          </button>
         </div>
       </div>
 
