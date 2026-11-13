@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { Volume2, Trash2, Plus, X, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Volume2, VolumeX, Trash2, Plus, X, Image as ImageIcon } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/database';
 import { PecsItem, PecsCategory } from '../types';
 import CardVisual from '../components/CardVisual';
 
-// Fungsi Kompresi Gambar
 const compressImage = (file: File, maxSize = 400): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -16,18 +15,12 @@ const compressImage = (file: File, maxSize = 400): Promise<string> => {
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let { width, height } = img;
-        if (width > height && width > maxSize) {
-          height *= maxSize / width;
-          width = maxSize;
-        } else if (height > maxSize) {
-          width *= maxSize / height;
-          height = maxSize;
-        }
-        canvas.width = width;
-        canvas.height = height;
+        if (width > height && width > maxSize) { height *= maxSize / width; width = maxSize; } 
+        else if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+        canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Kualitas 70%
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.onerror = reject;
     };
@@ -38,6 +31,7 @@ const compressImage = (file: File, maxSize = 400): Promise<string> => {
 export default function BoardPage() {
   const [sentence, setSentence] = useState<PecsItem[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('subjek');
+  const [isMuted, setIsMuted] = useState(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newWord, setNewWord] = useState('');
@@ -54,62 +48,54 @@ export default function BoardPage() {
   };
 
   const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'id-ID';
-      utterance.rate = 0.9;
-      window.speechSynthesis.speak(utterance);
-    }
+    if (isMuted || !('speechSynthesis' in window)) return;
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'id-ID';
+    utterance.rate = 0.9;
+    
+    // Deteksi suara Indonesia
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+    if (idVoice) utterance.voice = idVoice;
+
+    window.speechSynthesis.speak(utterance);
   };
 
+  // ... (fungsi handleFileUpload, handleAddCard, handleDeleteCard sama seperti sebelumnya)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsCompressing(true);
-    try {
-      const compressedBase64 = await compressImage(file);
-      setNewImageUrl(compressedBase64);
-    } catch (err) {
-      alert('Gagal memproses gambar.');
-    }
+    try { setNewImageUrl(await compressImage(file)); } catch (err) { alert('Gagal memproses gambar.'); }
     setIsCompressing(false);
   };
 
   const handleAddCard = async () => {
     if (!newWord.trim()) return alert('Tuliskan nama kartu!');
-
-    await db.cards.add({
-      id: 'custom_' + Date.now(),
-      word: newWord,
-      category: newCategory,
-      emoji: newEmoji,
-      imageUrl: newImageUrl || undefined,
-      isCustom: true
-    });
-
+    await db.cards.add({ id: 'custom_' + Date.now(), word: newWord, category: newCategory, emoji: newEmoji, imageUrl: newImageUrl || undefined, isCustom: true });
     setNewWord(''); setNewEmoji('🌟'); setNewImageUrl(''); setIsModalOpen(false);
   };
 
-  // (Sisa fungsi dan JSX sama seperti sebelumnya...)
   const handleDeleteCard = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (confirm('Hapus kartu ini?')) await db.cards.delete(id);
   };
 
-  const categories = [
-    { key: 'subjek', label: '👤 Subjek' },
-    { key: 'kata-kerja', label: '🟢 Kata Kerja' },
-    { key: 'benda', label: '🍎 Objek' },
-  ];
-
+  const categories = [{ key: 'subjek', label: '👤 Subjek' }, { key: 'kata-kerja', label: '🟢 Kata Kerja' }, { key: 'benda', label: '🍎 Objek' }];
   const filteredCards = cards.filter(c => c.category === activeCategory);
 
   return (
     <div className="pb-24">
       <header className="bg-white p-3 shadow-sm flex justify-between items-center sticky top-0 z-10">
         <h1 className="text-lg font-bold text-slate-800">Papan Bicara</h1>
-        <button onClick={() => setIsModalOpen(true)} className="p-2 bg-blue-100 rounded-full text-blue-600"><Plus size={20} /></button>
+        <div className="flex gap-2">
+          <button onClick={() => setIsMuted(!isMuted)} className={`p-2 rounded-full ${isMuted ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </button>
+          <button onClick={() => setIsModalOpen(true)} className="p-2 bg-blue-100 rounded-full text-blue-600"><Plus size={20} /></button>
+        </div>
       </header>
 
       <div className="p-3 bg-white mx-3 mt-3 rounded-xl shadow-sm min-h-[90px] border-2 border-dashed border-slate-300 flex gap-2 flex-wrap items-center">
@@ -163,7 +149,7 @@ export default function BoardPage() {
                 <input type="text" value={newWord} onChange={(e) => setNewWord(e.target.value)} className="w-full border-2 border-slate-200 rounded-lg p-2 focus:border-blue-500" />
               </div>
               <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <label className="block text-sm font-bold text-slate-700 mb-2">Gambar Kartu (Otomatis Kompres)</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Gambar Kartu</label>
                 {newImageUrl ? (
                   <div className="relative w-20 h-20 mx-auto mb-2">
                     <img src={newImageUrl} alt="Preview" className="w-full h-full object-contain" />
