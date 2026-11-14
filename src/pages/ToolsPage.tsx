@@ -10,7 +10,7 @@ export default function ToolsPage({ onNavigate }: { onNavigate: (tab: string) =>
     { id: 'cause_effect', title: 'Sebab & Akibat', desc: 'Latihan interaktif sentuh.', icon: <Zap size={28} />, color: 'bg-red-100 text-red-600' },
     { id: 'worksheet', title: 'Worksheet', desc: 'Cetak lembar kerja.', icon: <FileEdit size={28} />, color: 'bg-teal-100 text-teal-600' },
     { id: 'history', title: 'Riwayat Kata', desc: 'Lihat kata yang sering dipakai.', icon: <History size={28} />, color: 'bg-blue-100 text-blue-600' },
-    { id: 'emergency_id', title: 'ID Darurat', desc: 'Buat QR Code identitas darurat anak.', icon: <ShieldAlert size={28} />, color: 'bg-rose-100 text-rose-600' }, // Menu Baru
+    { id: 'emergency_id', title: 'ID Darurat', desc: 'Buat QR Code identitas darurat anak.', icon: <ShieldAlert size={28} />, color: 'bg-rose-100 text-rose-600' },
   ];
 
   return (
