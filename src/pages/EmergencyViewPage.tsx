@@ -4,11 +4,13 @@ import { unpackData, flagsToLabels } from '../utils/emergencyUtils';
 
 export default function EmergencyViewPage({ payload }: { payload: string }) {
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    unpackData(payload).then(setData).catch(() => alert('Data QR tidak valid.'));
+    unpackData(payload).then(setData).catch(() => setError(true));
   }, [payload]);
 
+  if (error) return <div className="p-10 text-center text-red-600 font-bold">Data QR tidak valid atau rusak.</div>;
   if (!data) return <div className="p-10 text-center">Memuat data darurat...</div>;
 
   const handleGps = () => {
@@ -45,7 +47,7 @@ export default function EmergencyViewPage({ payload }: { payload: string }) {
         <a href={`tel:+${data.w}`} className="w-full flex items-center justify-center gap-2 bg-green-600 text-white font-bold py-4 rounded-xl shadow-md">
           <Phone size={24} /> Telepon Sekarang
         </a>
-        <a href={`https://wa.me/${data.w}?text=Halo,%20saya%20menemukan%20${data.n}.`} target="_blank" rel="noreferrer" className="w-full flex items-center justify-center gap-2 bg-green-500 text-white font-bold py-4 rounded-xl shadow-md">
+        <a href={`https://wa.me/${data.w}?text=${encodeURIComponent(`Halo, saya menemukan ${data.n}.`)}`} target="_blank" rel="noreferrer" className="w-full flex items-center justify-center gap-2 bg-green-500 text-white font-bold py-4 rounded-xl shadow-md">
           <MessageCircle size={24} /> Kirim WhatsApp
         </a>
         <button onClick={handleGps} className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-4 rounded-xl shadow-md">
