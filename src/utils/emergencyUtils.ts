@@ -56,3 +56,9 @@ export async function unpackData(payload: string) {
 export function flagsToLabels(mask: number) {
   return FLAGS.filter((_, idx) => (mask & (1 << idx)) !== 0);
 }
+
+export function normalizePhone(raw: string) {
+  let d = (raw || "").replace(/\D/g, "");
+  if (d.startsWith("0")) d = "62" + d.slice(1);
+  return d;
+}
