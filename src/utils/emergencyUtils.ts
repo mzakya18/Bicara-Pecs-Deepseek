@@ -26,7 +26,7 @@ export function unb64url(str: string) {
   return Uint8Array.from(bin, c => c.charCodeAt(0));
 }
 
-async function transform(bytes: Uint8Array, stream: TransformStream) {
+async function transform(bytes: Uint8Array, stream: any) {
   const out = new Blob([bytes]).stream().pipeThrough(stream);
   return new Uint8Array(await new Response(out).arrayBuffer());
 }
